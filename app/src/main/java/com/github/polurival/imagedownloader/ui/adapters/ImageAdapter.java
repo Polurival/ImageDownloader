@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.v4.util.LruCache;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,48 +12,22 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.github.polurival.imagedownloader.R;
-import com.github.polurival.imagedownloader.data.managers.ThumbnailDownloader;
+import com.github.polurival.imagedownloader.data.managers.CacheManager;
+import com.github.polurival.imagedownloader.data.managers.DownloadManager;
 import com.github.polurival.imagedownloader.utils.UrlManager;
 
-import java.util.List;
-
-/**
- * MemoryCache:
- * https://developer.android.com/training/displaying-bitmaps/cache-bitmap.html
- * http://startandroid.ru/ru/uroki/vse-uroki-spiskom/376-urok-161-risovanie-bitmap-memory-kesh-picasso.html
- */
 public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.Holder> {
 
+    //Так как теперь в адаптере нет коллекции, количество item-ов пришлось захардкодить
+    private static final int ITEM_COUNT = 1000;
+
     private Context mContext;
-    private ThumbnailDownloader<Holder> mThumbnailDownloader;
-    private LruCache<String, Bitmap> mMemoryCache;
-    private List<String> mUrls;
+    private DownloadManager mDownloadManager;
 
-    public ImageAdapter(Context context,
-                        ThumbnailDownloader<Holder> thumbnailDownloader,
-                        LruCache<String, Bitmap> memoryCache) {
+    public ImageAdapter(Context context) {
         mContext = context;
-        mThumbnailDownloader = thumbnailDownloader;
-        mMemoryCache = memoryCache;
-        mUrls = UrlManager.getUrls();
-    }
-
-    public class Holder extends RecyclerView.ViewHolder {
-
-        private ImageView mItemImageView;
-
-        private Holder(View itemView) {
-            super(itemView);
-
-            mItemImageView = (ImageView) itemView.findViewById(R.id.item_image_view);
-        }
-
-        public void bindDrawable(Bitmap bitmap, int position) {
-            addBitmapToMemoryCache(String.valueOf(position), bitmap);
-
-            Drawable drawable = new BitmapDrawable(mContext.getResources(), bitmap);
-            mItemImageView.setImageDrawable(drawable);
-        }
+        mDownloadManager = DownloadManager.getInstance();
+        mDownloadManager.initExecutor();
     }
 
     @Override
@@ -66,37 +39,53 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.Holder> {
 
     @Override
     public void onBindViewHolder(Holder holder, int position) {
-        Bitmap bitmap = getBitmapFromMemCache(String.valueOf(position));
+        holder.mUrl = UrlManager.getUrl(position);
+
+        Bitmap bitmap = CacheManager.getBitmapFromMemCache(holder.getUrl());
         if (bitmap == null) {
 
-            Drawable placeHolder;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                placeHolder = mContext.getDrawable(R.drawable.ic_star_border_black_24dp);
-            } else {
-                placeHolder
-                        = mContext.getResources().getDrawable(R.drawable.ic_star_border_black_24dp);
-            }
-            holder.mItemImageView.setImageDrawable(placeHolder);
+            setPlaceHolder(holder);
 
-            String url = mUrls.get(position);
-            mThumbnailDownloader.queueThumbnail(holder, url);
+            mDownloadManager.startDownload(holder);
         } else {
-            holder.bindDrawable(bitmap, position);
+            holder.bindDrawable(bitmap);
         }
     }
 
     @Override
     public int getItemCount() {
-        return mUrls.size();
+        return ITEM_COUNT;
     }
 
-    private void addBitmapToMemoryCache(String key, Bitmap bitmap) {
-        if (getBitmapFromMemCache(key) == null) {
-            mMemoryCache.put(key, bitmap);
+    private void setPlaceHolder(Holder holder) {
+        Drawable placeHolder;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            placeHolder = mContext.getDrawable(R.drawable.ic_star_border_black_24dp);
+        } else {
+            placeHolder
+                    = mContext.getResources().getDrawable(R.drawable.ic_star_border_black_24dp);
         }
+        holder.mItemImageView.setImageDrawable(placeHolder);
     }
 
-    private Bitmap getBitmapFromMemCache(String key) {
-        return mMemoryCache.get(key);
+    public class Holder extends RecyclerView.ViewHolder {
+
+        private String mUrl;
+        private ImageView mItemImageView;
+
+        private Holder(View itemView) {
+            super(itemView);
+
+            mItemImageView = (ImageView) itemView.findViewById(R.id.item_image_view);
+        }
+
+        public String getUrl() {
+            return mUrl;
+        }
+
+        public void bindDrawable(Bitmap bitmap) {
+            Drawable drawable = new BitmapDrawable(mContext.getResources(), bitmap);
+            mItemImageView.setImageDrawable(drawable);
+        }
     }
 }

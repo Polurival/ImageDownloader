@@ -1,12 +1,13 @@
 package com.github.polurival.imagedownloader.ui.activities;
 
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 
 import com.github.polurival.imagedownloader.R;
-import com.github.polurival.imagedownloader.ui.fragments.ImageGalleryFragment;
+import com.github.polurival.imagedownloader.data.managers.DownloadManager;
+import com.github.polurival.imagedownloader.ui.adapters.ImageAdapter;
 
 /**
  * todo:
@@ -28,21 +29,24 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_fragment);
+        setContentView(R.layout.activity_main);
 
-        FragmentManager fm = getSupportFragmentManager();
-        Fragment fragment = fm.findFragmentById(R.id.fragment_container);
+        initRecyclerView();
+    }
 
-        if (fragment == null) {
-            /* В данном случае можно просто new ImageGalleryFragment().
-               В newInstance() можно добавить параметры, которые добавляются в Bundle.
-               Bundle добавляется к фрагменту с помощью setArguments()
-               Этот механизм позволяет использовать один класс фрагмента для разных данных.
-             */
-            fragment = ImageGalleryFragment.newInstance();
-            fm.beginTransaction()
-                    .add(R.id.fragment_container, fragment)
-                    .commit();
-        }
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        DownloadManager.getInstance().shutdownExecutor();
+    }
+
+    private void initRecyclerView() {
+        RecyclerView mImageRecyclerView =
+                (RecyclerView) findViewById(R.id.fragment_image_gallery_recycler_view);
+        mImageRecyclerView.setLayoutManager(new GridLayoutManager(this, 3));
+
+        ImageAdapter adapter = new ImageAdapter(this);
+        mImageRecyclerView.setAdapter(adapter);
     }
 }
