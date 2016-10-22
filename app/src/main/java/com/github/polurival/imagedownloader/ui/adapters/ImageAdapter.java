@@ -18,7 +18,7 @@ import com.github.polurival.imagedownloader.utils.UrlManager;
 
 public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.Holder> {
 
-    //Так как теперь в адаптере нет коллекции, количество item-ов пришлось захардкодить
+    //Так как теперь в адаптере нет коллекции url-ов, количество item-ов пришлось захардкодить
     private static final int ITEM_COUNT = 1000;
 
     private Context mContext;
@@ -29,7 +29,6 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.Holder> {
         mContext = context;
         mDownloadManager = DownloadManager.getInstance();
         mCacheManager = CacheManager.getInstance();
-        mDownloadManager.initExecutor();
     }
 
     @Override
