@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -29,9 +31,17 @@ public class DownloadManager {
     }
 
     private ThreadPoolExecutor mExecutor;
+
+    //без этой Map наблюдается эффект, о котором мы говорили,
+    //когда в один и тот же holder сначала загружается старое изображение, а затем новое
+    private ConcurrentMap<ImageAdapter.Holder, String> mRequestMap;
+
+    private CacheManager mCacheManager;
     private final Handler uiHandler;
 
     private DownloadManager() {
+        mRequestMap = new ConcurrentHashMap<>();
+        mCacheManager = CacheManager.getInstance();
         uiHandler = new Handler(Looper.getMainLooper());
     }
 
@@ -40,6 +50,7 @@ public class DownloadManager {
     }
 
     public void startDownload(final ImageAdapter.Holder holder) {
+        mRequestMap.put(holder, holder.getUrl());
 
         DownloadTask downloadTask = new DownloadTask(holder);
         mExecutor.submit(downloadTask);
@@ -60,28 +71,41 @@ public class DownloadManager {
         @Override
         public void run() {
             Log.d(TAG, "Current thread is: " + Thread.currentThread().getName());
-
-            final String url = mHolder.getUrl();
-
             try {
-                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                final String url = mRequestMap.get(mHolder);
+
+                //иногда url = null
+                if (url == null) {
+                    return;
+                }
+
+                HttpURLConnection connection =
+                        (HttpURLConnection) new URL(url).openConnection();
                 final Bitmap bitmap = BitmapFactory
                         .decodeStream((InputStream) connection.getContent());
-
-                uiHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.d(TAG, "Current thread is: " + Thread.currentThread().getName());
-
-                        CacheManager.addBitmapToMemCache(mHolder.getUrl(), bitmap);
-                        mHolder.bindDrawable(bitmap);
-                    }
-                });
-
                 Log.i(TAG, "Bitmap created");
+                mCacheManager.addBitmapToMemCache(url, bitmap);
+
+                //предотвращает установку изображения не в свой holder
+                if (!url.equals(mRequestMap.get(mHolder))) {
+                    return;
+                }
+
+                setImageToHolder(bitmap);
+
             } catch (IOException ioe) {
                 Log.e(TAG, "Error downloading image", ioe);
             }
+        }
+
+        private void setImageToHolder(final Bitmap bitmap) {
+            uiHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d(TAG, "Current thread is: " + Thread.currentThread().getName());
+                    mHolder.bindDrawable(bitmap);
+                }
+            });
         }
     }
 }

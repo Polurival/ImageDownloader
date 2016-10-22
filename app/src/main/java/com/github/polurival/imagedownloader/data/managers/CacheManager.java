@@ -6,14 +6,24 @@ import android.util.Log;
 
 import com.github.polurival.imagedownloader.utils.App;
 
-public class CacheManager {
+public class CacheManager implements ICache {
 
     private static final String TAG = CacheManager.class.getSimpleName();
+
+    private static CacheManager sInstance;
+
+    public static CacheManager getInstance() {
+        if (sInstance == null) {
+            sInstance = new CacheManager();
+        }
+        return sInstance;
+    }
 
     private CacheManager() {
     }
 
-    public static LruCache<String, Bitmap> initMemoryCache() {
+    @Override
+    public LruCache<String, Bitmap> initMemoryCache() {
 
         final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
         final int cacheSize = maxMemory / 8;
@@ -27,13 +37,15 @@ public class CacheManager {
         };
     }
 
-    public static void addBitmapToMemCache(String url, Bitmap bitmap) {
+    @Override
+    public void addBitmapToMemCache(String url, Bitmap bitmap) {
         if (getBitmapFromMemCache(url) == null) {
             App.getMemoryCache().put(url, bitmap);
         }
     }
 
-    public static Bitmap getBitmapFromMemCache(String url) {
+    @Override
+    public Bitmap getBitmapFromMemCache(String url) {
         return App.getMemoryCache().get(url);
     }
 

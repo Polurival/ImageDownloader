@@ -23,10 +23,12 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.Holder> {
 
     private Context mContext;
     private DownloadManager mDownloadManager;
+    private CacheManager mCacheManager;
 
     public ImageAdapter(Context context) {
         mContext = context;
         mDownloadManager = DownloadManager.getInstance();
+        mCacheManager = CacheManager.getInstance();
         mDownloadManager.initExecutor();
     }
 
@@ -41,7 +43,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.Holder> {
     public void onBindViewHolder(Holder holder, int position) {
         holder.mUrl = UrlManager.getUrl(position);
 
-        Bitmap bitmap = CacheManager.getBitmapFromMemCache(holder.getUrl());
+        Bitmap bitmap = mCacheManager.getBitmapFromMemCache(holder.getUrl());
         if (bitmap == null) {
 
             setPlaceHolder(holder);
