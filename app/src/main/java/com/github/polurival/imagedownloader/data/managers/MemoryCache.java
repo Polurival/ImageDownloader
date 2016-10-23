@@ -4,26 +4,26 @@ import android.graphics.Bitmap;
 import android.support.v4.util.LruCache;
 import android.util.Log;
 
-import com.github.polurival.imagedownloader.utils.App;
+public class MemoryCache implements ICache {
 
-public class CacheManager implements ICache {
+    private static final String TAG = MemoryCache.class.getSimpleName();
 
-    private static final String TAG = CacheManager.class.getSimpleName();
+    private static ICache sInstance;
 
-    private static CacheManager sInstance;
-
-    public static CacheManager getInstance() {
+    public static ICache getInstance() {
         if (sInstance == null) {
-            sInstance = new CacheManager();
+            sInstance = new MemoryCache();
         }
         return sInstance;
     }
 
-    private CacheManager() {
+    private LruCache<String, Bitmap> mMemoryCache;
+
+    private MemoryCache() {
+        mMemoryCache = initMemoryCache();
     }
 
-    @Override
-    public LruCache<String, Bitmap> initMemoryCache() {
+    private LruCache<String, Bitmap> initMemoryCache() {
 
         final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
         final int cacheSize = maxMemory / 8;
@@ -40,13 +40,13 @@ public class CacheManager implements ICache {
     @Override
     public void addBitmapToMemCache(String url, Bitmap bitmap) {
         if (getBitmapFromMemCache(url) == null) {
-            App.getMemoryCache().put(url, bitmap);
+            mMemoryCache.put(url, bitmap);
         }
     }
 
     @Override
     public Bitmap getBitmapFromMemCache(String url) {
-        return App.getMemoryCache().get(url);
+        return mMemoryCache.get(url);
     }
 
 }

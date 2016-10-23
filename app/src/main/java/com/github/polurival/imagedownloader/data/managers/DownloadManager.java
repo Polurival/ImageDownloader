@@ -7,6 +7,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import com.github.polurival.imagedownloader.ui.adapters.ImageAdapter;
+import com.github.polurival.imagedownloader.utils.App;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,18 +31,16 @@ public class DownloadManager {
         return sInstance;
     }
 
-    private ThreadPoolExecutor mExecutor;
-
     //без этой Map наблюдается эффект, о котором мы говорили,
     //когда в один и тот же holder сначала загружается старое изображение, а затем новое
     private ConcurrentMap<ImageAdapter.Holder, String> mRequestMap;
-
-    private CacheManager mCacheManager;
+    private ThreadPoolExecutor mExecutor;
+    private ICache mMemoryCache;
     private final Handler uiHandler;
 
     private DownloadManager() {
         mRequestMap = new ConcurrentHashMap<>();
-        mCacheManager = CacheManager.getInstance();
+        mMemoryCache = App.getMemoryCache();
         uiHandler = new Handler(Looper.getMainLooper());
     }
 
@@ -84,7 +83,7 @@ public class DownloadManager {
                 final Bitmap bitmap = BitmapFactory
                         .decodeStream((InputStream) connection.getContent());
                 Log.i(TAG, "Bitmap created");
-                mCacheManager.addBitmapToMemCache(url, bitmap);
+                mMemoryCache.addBitmapToMemCache(url, bitmap);
 
                 //предотвращает установку изображения не в свой holder
                 if (!url.equals(mRequestMap.get(mHolder))) {

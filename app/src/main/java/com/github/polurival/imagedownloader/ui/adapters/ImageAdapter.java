@@ -12,8 +12,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.github.polurival.imagedownloader.R;
-import com.github.polurival.imagedownloader.data.managers.CacheManager;
 import com.github.polurival.imagedownloader.data.managers.DownloadManager;
+import com.github.polurival.imagedownloader.data.managers.ICache;
+import com.github.polurival.imagedownloader.utils.App;
 import com.github.polurival.imagedownloader.utils.UrlManager;
 
 public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.Holder> {
@@ -23,12 +24,12 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.Holder> {
 
     private Context mContext;
     private DownloadManager mDownloadManager;
-    private CacheManager mCacheManager;
+    private ICache mMemoryCache;
 
     public ImageAdapter(Context context) {
         mContext = context;
         mDownloadManager = DownloadManager.getInstance();
-        mCacheManager = CacheManager.getInstance();
+        mMemoryCache = App.getMemoryCache();
     }
 
     @Override
@@ -42,7 +43,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.Holder> {
     public void onBindViewHolder(Holder holder, int position) {
         holder.mUrl = UrlManager.getUrl(position);
 
-        Bitmap bitmap = mCacheManager.getBitmapFromMemCache(holder.getUrl());
+        Bitmap bitmap = mMemoryCache.getBitmapFromMemCache(holder.getUrl());
         if (bitmap == null) {
 
             setPlaceHolder(holder);
@@ -63,8 +64,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.Holder> {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             placeHolder = mContext.getDrawable(R.drawable.ic_star_border_black_24dp);
         } else {
-            placeHolder
-                    = mContext.getResources().getDrawable(R.drawable.ic_star_border_black_24dp);
+            placeHolder = mContext.getResources().getDrawable(R.drawable.ic_star_border_black_24dp);
         }
         holder.mItemImageView.setImageDrawable(placeHolder);
     }

@@ -1,23 +1,22 @@
 package com.github.polurival.imagedownloader.utils;
 
 import android.app.Application;
-import android.graphics.Bitmap;
-import android.support.v4.util.LruCache;
 
-import com.github.polurival.imagedownloader.data.managers.CacheManager;
+import com.github.polurival.imagedownloader.data.managers.ICache;
+import com.github.polurival.imagedownloader.data.managers.MemoryCache;
 
 public class App extends Application {
 
-    private static LruCache<String, Bitmap> sMemoryCache;
+    private static ICache sMemoryCache;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        sMemoryCache = CacheManager.getInstance().initMemoryCache();
+        sMemoryCache = MemoryCache.getInstance();
     }
 
-    public static LruCache<String, Bitmap> getMemoryCache() {
+    public static ICache getMemoryCache() {
         return sMemoryCache;
     }
 }
